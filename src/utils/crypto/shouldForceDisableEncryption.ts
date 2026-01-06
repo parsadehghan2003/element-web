@@ -27,5 +27,5 @@ export function shouldForceDisableEncryption(client: MatrixClient): boolean {
         const shouldForceDisable = e2eeWellKnown["force_disable"] === true;
         return shouldForceDisable;
     }
-    return false;
+    return true;
 }

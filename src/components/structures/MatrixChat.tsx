@@ -427,7 +427,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
      */
     private async postLoginSetup(): Promise<void> {
         const cli = MatrixClientPeg.safeGet();
-        const cryptoEnabled = Boolean(cli.getCrypto());
+        const cryptoEnabled = false
         if (!cryptoEnabled) {
             this.onShowPostLoginScreen();
         }
@@ -1789,7 +1789,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
     private async onClientStarted(): Promise<void> {
         const cli = MatrixClientPeg.safeGet();
 
-        const shouldForceVerification = await this.shouldForceVerification();
+        const shouldForceVerification = false;
 
         const crypto = cli.getCrypto();
         if (crypto) {
@@ -2155,7 +2155,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
     public render(): React.ReactNode {
         const fragmentAfterLogin = this.getFragmentAfterLogin();
         let view: JSX.Element;
-
+        
         if (this.state.view === Views.LOADING) {
             view = (
                 <div className="mx_MatrixChat_splash">

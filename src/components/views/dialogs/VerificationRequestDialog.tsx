@@ -83,31 +83,31 @@ export default class VerificationRequestDialog extends React.Component<IProps, I
     };
 
     public render(): React.ReactNode {
-        const request = this.state.verificationRequest;
-        const otherUserId = request?.otherUserId;
-        const member = this.props.member || (otherUserId ? MatrixClientPeg.safeGet().getUser(otherUserId) : null);
-        const title = this.dialogTitle(request);
+        // const request = this.state.verificationRequest;
+        // const otherUserId = request?.otherUserId;
+        // const member = this.props.member || (otherUserId ? MatrixClientPeg.safeGet().getUser(otherUserId) : null);
+        // const title = this.dialogTitle(request);
 
-        if (!member) return null;
+        return null;
 
-        return (
-            <BaseDialog
-                className="mx_InfoDialog"
-                onFinished={this.props.onFinished}
-                contentId="mx_Dialog_content"
-                title={title}
-                hasCancel={true}
-            >
-                <EncryptionPanel
-                    layout="dialog"
-                    verificationRequest={this.state.verificationRequest}
-                    verificationRequestPromise={this.props.verificationRequestPromise}
-                    onClose={this.props.onFinished}
-                    member={member}
-                    isRoomEncrypted={false}
-                />
-            </BaseDialog>
-        );
+        // return (
+        //     <BaseDialog
+        //         className="mx_InfoDialog"
+        //         onFinished={this.props.onFinished}
+        //         contentId="mx_Dialog_content"
+        //         title={title}
+        //         hasCancel={true}
+        //     >
+        //         <EncryptionPanel
+        //             layout="dialog"
+        //             verificationRequest={this.state.verificationRequest}
+        //             verificationRequestPromise={this.props.verificationRequestPromise}
+        //             onClose={this.props.onFinished}
+        //             member={member}
+        //             isRoomEncrypted={false}
+        //         />
+        //     </BaseDialog>
+        // );
     }
 
     private dialogTitle(request?: VerificationRequest): string {

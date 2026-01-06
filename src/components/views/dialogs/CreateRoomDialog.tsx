@@ -122,8 +122,8 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
         const cli = MatrixClientPeg.safeGet();
         this.state = {
             isPublicKnockRoom: defaultPublic || false,
-            isEncrypted: this.props.defaultEncrypted ?? privateShouldBeEncrypted(cli),
-            isStateEncrypted: this.props.defaultStateEncrypted ?? false,
+            isEncrypted: false,
+            isStateEncrypted: false,
             joinRule,
             name: this.props.defaultName || "",
             topic: "",
@@ -477,8 +477,8 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                         </div>
 
                         {visibilitySection}
-                        {e2eeSection}
-                        {e2eeStateSection}
+                        {/* {e2eeSection}
+                        {e2eeStateSection} */}
                         {aliasField}
                         {this.advancedSettingsEnabled && (
                             <details onToggle={this.onDetailsToggled} className="mx_CreateRoomDialog_details">

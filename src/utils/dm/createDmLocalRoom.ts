@@ -44,22 +44,22 @@ export async function createDmLocalRoom(client: MatrixClient, targets: Member[])
         }),
     );
 
-    if (await determineCreateRoomEncryptionOption(client, targets)) {
-        localRoom.encrypted = true;
-        events.push(
-            new MatrixEvent({
-                event_id: `~${localRoom.roomId}:${client.makeTxnId()}`,
-                type: EventType.RoomEncryption,
-                content: {
-                    algorithm: MEGOLM_ENCRYPTION_ALGORITHM,
-                },
-                sender: userId,
-                state_key: "",
-                room_id: localRoom.roomId,
-                origin_server_ts: Date.now(),
-            }),
-        );
-    }
+    // if (await determineCreateRoomEncryptionOption(client, targets)) {
+    //     localRoom.encrypted = true;
+    //     events.push(
+    //         new MatrixEvent({
+    //             event_id: `~${localRoom.roomId}:${client.makeTxnId()}`,
+    //             type: EventType.RoomEncryption,
+    //             content: {
+    //                 algorithm: MEGOLM_ENCRYPTION_ALGORITHM,
+    //             },
+    //             sender: userId,
+    //             state_key: "",
+    //             room_id: localRoom.roomId,
+    //             origin_server_ts: Date.now(),
+    //         }),
+    //     );
+    // }
 
     events.push(
         new MatrixEvent({

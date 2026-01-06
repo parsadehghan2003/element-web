@@ -184,21 +184,21 @@ export interface IDMUserTileProps {
  * @returns {Promise<boolean>}
  */
 export async function determineCreateRoomEncryptionOption(client: MatrixClient, targets: Member[]): Promise<boolean> {
-    if (privateShouldBeEncrypted(client)) {
-        // Enable encryption for a single 3rd party invite.
-        if (targets.length === 1 && targets[0] instanceof ThreepidMember) return true;
+    // if (privateShouldBeEncrypted(client)) {
+    //     // Enable encryption for a single 3rd party invite.
+    //     if (targets.length === 1 && targets[0] instanceof ThreepidMember) return true;
 
-        // Check whether all users have uploaded device keys before.
-        // If so, enable encryption in the new room.
-        const has3PidMembers = targets.some((t) => t instanceof ThreepidMember);
-        if (!has3PidMembers) {
-            const targetIds = targets.map((t) => t.userId);
-            const allHaveDeviceKeys = await canEncryptToAllUsers(client, targetIds);
-            if (allHaveDeviceKeys) {
-                return true;
-            }
-        }
-    }
+    //     // Check whether all users have uploaded device keys before.
+    //     // If so, enable encryption in the new room.
+    //     const has3PidMembers = targets.some((t) => t instanceof ThreepidMember);
+    //     if (!has3PidMembers) {
+    //         const targetIds = targets.map((t) => t.userId);
+    //         const allHaveDeviceKeys = await canEncryptToAllUsers(client, targetIds);
+    //         if (allHaveDeviceKeys) {
+    //             return true;
+    //         }
+    //     }
+    // }
 
     return false;
 }

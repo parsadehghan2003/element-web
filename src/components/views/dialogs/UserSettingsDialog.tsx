@@ -201,32 +201,32 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
             );
         }
 
-        tabs.push(
-            new Tab(
-                UserTab.Security,
-                _td("room_settings|security|title"),
-                <LockIcon />,
-                <SecurityUserSettingsTab closeSettingsFn={props.onFinished} />,
-                "UserSettingsSecurityPrivacy",
-            ),
-        );
+        // tabs.push(
+        //     new Tab(
+        //         UserTab.Security,
+        //         _td("room_settings|security|title"),
+        //         <LockIcon />,
+        //         <SecurityUserSettingsTab closeSettingsFn={props.onFinished} />,
+        //         "UserSettingsSecurityPrivacy",
+        //     ),
+        // );
 
-        tabs.push(
-            new Tab(
-                UserTab.Encryption,
-                _td("settings|encryption|title"),
-                <KeyIcon />,
-                <EncryptionUserSettingsTab initialState={initialEncryptionState} />,
-                "UserSettingsEncryption",
-                showSetupRecoveryIndicator ? "mx_SettingsDialog_tabLabelsAlert" : undefined,
-            ),
-        );
+        // tabs.push(
+        //     new Tab(
+        //         UserTab.Encryption,
+        //         _td("settings|encryption|title"),
+        //         <KeyIcon />,
+        //         <EncryptionUserSettingsTab initialState={initialEncryptionState} />,
+        //         "UserSettingsEncryption",
+        //         showSetupRecoveryIndicator ? "mx_SettingsDialog_tabLabelsAlert" : undefined,
+        //     ),
+        // );
 
-        if (showLabsFlags() || SettingsStore.getFeatureSettingNames().some((k) => SettingsStore.getBetaInfo(k))) {
-            tabs.push(
-                new Tab(UserTab.Labs, _td("common|labs"), <LabsIcon />, <LabsUserSettingsTab />, "UserSettingsLabs"),
-            );
-        }
+        // if (showLabsFlags() || SettingsStore.getFeatureSettingNames().some((k) => SettingsStore.getBetaInfo(k))) {
+        //     tabs.push(
+        //         new Tab(UserTab.Labs, _td("common|labs"), <LabsIcon />, <LabsUserSettingsTab />, "UserSettingsLabs"),
+        //     );
+        // }
         if (mjolnirEnabled) {
             tabs.push(
                 new Tab(

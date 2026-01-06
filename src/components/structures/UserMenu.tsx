@@ -341,11 +341,11 @@ export default class UserMenu extends React.Component<IProps, IState> {
                     label={_t("notifications|enable_prompt_toast_title")}
                     onClick={(e) => this.onSettingsOpen(e, UserTab.Notifications)}
                 />
-                <IconizedContextMenuOption
+                {/* <IconizedContextMenuOption
                     icon={<LockSolidIcon />}
                     label={_t("room_settings|security|title")}
                     onClick={(e) => this.onSettingsOpen(e, UserTab.Security)}
-                />
+                /> */}
                 <IconizedContextMenuOption
                     icon={<SettingsSolidIcon />}
                     label={_t("user_menu|settings")}

@@ -419,7 +419,7 @@ export default class DeviceListener extends TypedEventEmitter<DeviceListenerEven
         const cryptoApi = cli?.getCrypto();
         if (!cli || !cryptoApi) return false;
 
-        return await asyncSomeParallel(cli.getRooms(), ({ roomId }) => cryptoApi.isEncryptionEnabledInRoom(roomId));
+        return await false;
     }
 
     private recheck(): void {
@@ -433,6 +433,7 @@ export default class DeviceListener extends TypedEventEmitter<DeviceListenerEven
     }
 
     private async doRecheck(): Promise<void> {
+        return
         if (!this.running || !this.client) return; // we have been stopped
         const logSpan = new LogSpan(logger, "check_" + secureRandomString(4));
         logSpan.debug("starting recheck...");
@@ -659,13 +660,7 @@ export default class DeviceListener extends TypedEventEmitter<DeviceListenerEven
     private async setDeviceState(newState: DeviceState, logSpan: LogSpan): Promise<void> {
         this.deviceState = newState;
         this.emit(DeviceListenerEvents.DeviceState, newState);
-        if (newState === "ok" || this.dismissedThisDeviceToast) {
-            hideSetupEncryptionToast();
-        } else if (await this.shouldShowSetupEncryptionToast()) {
-            showSetupEncryptionToast(newState);
-        } else {
-            logSpan.info("Not yet ready, but shouldShowSetupEncryptionToast==false");
-        }
+        hideSetupEncryptionToast();
     }
 
     /**

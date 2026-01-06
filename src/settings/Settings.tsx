@@ -1385,7 +1385,7 @@ export const SETTINGS: Settings = {
     },
     [UIFeature.AdvancedEncryption]: {
         supportedLevels: LEVELS_UI_FEATURE,
-        default: true,
+        default: false,
     },
     [UIFeature.URLPreviews]: {
         supportedLevels: LEVELS_UI_FEATURE,
@@ -1401,7 +1401,7 @@ export const SETTINGS: Settings = {
     },
     [UIFeature.Voip]: {
         supportedLevels: LEVELS_UI_FEATURE,
-        default: true,
+        default: false,
     },
     [UIFeature.Feedback]: {
         supportedLevels: LEVELS_UI_FEATURE,
