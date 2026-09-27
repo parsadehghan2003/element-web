@@ -62,6 +62,9 @@ export default {
                 // count tests as entry points. NewTimelinePanel picks it up in a follow-up PR,
                 // at which point this line can go.
                 "src/viewmodels/room/timeline/RoomTimelineViewModel.ts!",
+                // Start9: the native-app guide page is no longer built (webpack.config.ts), but its source stays
+                // at upstream's version so upstream merges don't conflict.
+                "src/vector/mobile_guide/*.ts!",
             ],
             project: [
                 "**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,pcss}!",

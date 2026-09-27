@@ -34,7 +34,8 @@ jobs:
 
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
               with:
-                  cache: "pnpm"
+                  # No dependency cache in a release workflow: a poisoned cache would ship in the module.
+                  package-manager-cache: false
                   node-version: "lts/*"
 
             - name: Install deps

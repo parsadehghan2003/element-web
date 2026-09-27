@@ -29,7 +29,8 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
               with:
                   node-version-file: .node-version
-                  cache: pnpm
+                  # No dependency cache in a workflow that publishes images: a poisoned cache would ship in them.
+                  package-manager-cache: false
 
             - run: pnpm install --frozen-lockfile
             - run: pnpm exec nx run element-web:test:unit:prepare
@@ -52,7 +53,8 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
               with:
                   node-version-file: .node-version
-                  cache: pnpm
+                  # No dependency cache in a workflow that publishes images: a poisoned cache would ship in them.
+                  package-manager-cache: false
 
             - run: pnpm install --frozen-lockfile
             - run: pnpm exec nx run element-web:test:unit:prepare
@@ -75,13 +77,13 @@ jobs:
                   fetch-depth: 0
                   persist-credentials: false
 
-            - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
-            - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+            - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+            - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
               with:
                   install: true
 
             - name: Build and load
-              uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7
+              uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
               with:
                   source: .
                   files: ./docker-bake.hcl
@@ -124,7 +126,7 @@ jobs:
 
             - name: Build and push
               if: github.event_name != 'pull_request'
-              uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7
+              uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
               with:
                   source: .
                   files: |
