@@ -33,6 +33,7 @@ import { IS_MAC } from "../../../../../Keyboard";
 import SpellCheckSettings from "../../SpellCheckSettings";
 import * as TimezoneHandler from "../../../../../TimezoneHandler";
 import { type BooleanSettingKey } from "../../../../../settings/Settings.tsx";
+import { isCryptoDisabled } from "../../../../../utils/crypto/isCryptoDisabled";
 import { MediaPreviewAccountSettings } from "./MediaPreviewAccountSettings.tsx";
 import { InviteRulesAccountSetting } from "./InviteRulesAccountSettings.tsx";
 import SettingsDropdown from "../../../elements/SettingsDropdown.tsx";
@@ -346,11 +347,13 @@ export default class PreferencesUserSettingsTab extends React.Component<EmptyObj
                         formWrap
                     >
                         <SettingsFlag name="urlPreviewsEnabled" level={SettingLevel.DEVICE} />
-                        <SettingsFlag
-                            name="urlPreviewsEnabled_e2ee"
-                            level={SettingLevel.DEVICE}
-                            requires={["urlPreviewsEnabled"]}
-                        />
+                        {!isCryptoDisabled() && (
+                            <SettingsFlag
+                                name="urlPreviewsEnabled_e2ee"
+                                level={SettingLevel.DEVICE}
+                                requires={["urlPreviewsEnabled"]}
+                            />
+                        )}
                     </SettingsSubsection>
 
                     <SettingsSubsection heading={_t("settings|preferences|media_heading")} formWrap>

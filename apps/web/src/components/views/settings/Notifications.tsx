@@ -23,6 +23,7 @@ import { Form, SettingsToggleInput } from "@vector-im/compound-web";
 
 import Spinner from "../elements/Spinner";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import { isCryptoDisabled } from "../../../utils/crypto/isCryptoDisabled";
 import {
     ContentRules,
     type IContentRules,
@@ -353,9 +354,13 @@ export default class Notifications extends React.PureComponent<EmptyObject, ISta
         // Prepare rendering for all of our known rules
         preparedNewState.vectorPushRules = {};
         const vectorCategories = [RuleClass.VectorGlobal, RuleClass.VectorMentions, RuleClass.VectorOther];
+        const cryptoDisabled = isCryptoDisabled();
         for (const category of vectorCategories) {
             preparedNewState.vectorPushRules[category] = [];
             for (const rule of defaultRules[category]) {
+                // Without crypto there are no encrypted rooms, so no rules for encrypted messages to show.
+                if (cryptoDisabled && [RuleId.EncryptedDM, RuleId.EncryptedMessage].includes(rule.rule_id as RuleId))
+                    continue;
                 const definition: VectorPushRuleDefinition = VectorPushRulesDefinitions[rule.rule_id];
                 const vectorState = definition.ruleToVectorState(rule)!;
                 preparedNewState.vectorPushRules[category].push({

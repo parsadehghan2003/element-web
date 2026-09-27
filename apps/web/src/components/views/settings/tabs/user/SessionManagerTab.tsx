@@ -306,7 +306,7 @@ const SessionManagerTab: React.FC<{
                                 disabled={!!signingOutDeviceIds.length}
                             />
                         }
-                        description={_t("settings|sessions|best_security_note")}
+                        description={matrixClient.getCrypto() ? _t("settings|sessions|best_security_note") : undefined}
                         data-testid="other-sessions-section"
                         stretchContent
                     >

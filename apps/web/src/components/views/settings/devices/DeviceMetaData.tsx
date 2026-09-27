@@ -13,6 +13,7 @@ import { INACTIVE_DEVICE_AGE_DAYS, isDeviceInactive } from "../../../../componen
 import { type ExtendedDevice } from "../../../../components/views/settings/devices/types";
 import { formatDate, formatRelativeTime } from "../../../../DateUtils";
 import { _t } from "../../../../languageHandler";
+import { useCryptoDisabled } from "../../../../hooks/useCryptoDisabled";
 
 interface Props {
     device: ExtendedDevice;
@@ -57,11 +58,12 @@ export const DeviceMetaData: React.FC<Props> = ({ device }) => {
     const lastActivity =
         device.last_seen_ts && `${_t("settings|sessions|last_activity")} ${formatLastActivity(device.last_seen_ts)}`;
     const verificationStatus = device.isVerified ? _t("common|verified") : _t("common|unverified");
+    const cryptoDisabled = useCryptoDisabled();
     // if device is inactive, don't display last activity or verificationStatus
     const metadata = inactive
         ? [inactive, { id: "lastSeenIp", value: device.last_seen_ip }]
         : [
-              { id: "isVerified", value: verificationStatus },
+              { id: "isVerified", value: cryptoDisabled ? null : verificationStatus },
               { id: "lastActivity", value: lastActivity },
               { id: "lastSeenIp", value: device.last_seen_ip },
               { id: "deviceId", value: device.device_id },

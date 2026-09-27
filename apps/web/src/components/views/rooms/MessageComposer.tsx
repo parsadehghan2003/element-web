@@ -22,6 +22,7 @@ import { LockOffIcon, SendSolidIcon } from "@vector-im/compound-design-tokens/as
 import { useCreateAutoDisposedViewModel } from "@element-hq/web-shared-components";
 
 import { _t } from "../../../languageHandler";
+import { keylessComposerPlaceholder } from "./keylessComposerPlaceholder";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import dis from "../../../dispatcher/dispatcher";
 import { type ActionPayload } from "../../../dispatcher/payloads";
@@ -371,6 +372,8 @@ export class MessageComposer extends React.Component<IProps, IState> {
     };
 
     private renderPlaceholderText = (): string => {
+        const keyless = keylessComposerPlaceholder(this.props.room, this.props.replyToEvent, this.props.relation);
+        if (keyless) return keyless;
         if (this.props.replyToEvent) {
             const replyingToThread = this.props.relation?.rel_type === THREAD_RELATION_TYPE.name;
             if (replyingToThread && this.props.e2eStatus) {
@@ -577,6 +580,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                 );
             }
         }
+        if (!this.props.room.client.getCrypto()) leftIcon = false;
 
         const controls: ReactNode[] = [];
         const menuPosition = this.getMenuPosition();

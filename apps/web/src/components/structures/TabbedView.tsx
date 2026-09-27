@@ -17,6 +17,7 @@ import { PosthogScreenTracker, type ScreenName } from "../../PosthogTrackers";
 import { type NonEmptyArray } from "../../@types/common";
 import { RovingAccessibleButton, RovingTabIndexProvider } from "../../accessibility/RovingTabIndex";
 import { useWindowWidth } from "../../hooks/useWindowWidth";
+import { PhoneTabHeader, usePhoneTabs } from "./PhoneTabs";
 
 /**
  * Represents a tab for the TabbedView.
@@ -153,13 +154,17 @@ export default function TabbedView<T extends string>(props: IProps<T>): JSX.Elem
     };
 
     const windowWidth = useWindowWidth();
+    const phoneTabs = usePhoneTabs(props.activeTabId, props.tabs[0].id, tabLocation == TabLocation.LEFT);
 
     const labels = props.tabs.map((tab) => (
         <TabLabel
             key={"tab_label_" + tab.id}
             tab={tab}
             isActive={tab.id === props.activeTabId}
-            onClick={() => props.onChange(tab.id)}
+            onClick={() => {
+                props.onChange(tab.id);
+                phoneTabs.openPage();
+            }}
             // This should be the same as the the CSS breakpoint at which the tab labels are hidden
             showToolip={windowWidth < 1024 && tabLocation == TabLocation.LEFT}
         />
@@ -172,6 +177,8 @@ export default function TabbedView<T extends string>(props: IProps<T>): JSX.Elem
         mx_TabbedView_tabsOnLeft: tabLocation == TabLocation.LEFT,
         mx_TabbedView_tabsOnTop: tabLocation == TabLocation.TOP,
         mx_TabbedView_responsive: props.responsive,
+        mx_TabbedView_phoneList: phoneTabs.phone && phoneTabs.showingList,
+        mx_TabbedView_phonePage: phoneTabs.phone && !phoneTabs.showingList,
     });
 
     const screenName = tab?.screenName ?? props.screenName;
@@ -196,6 +203,9 @@ export default function TabbedView<T extends string>(props: IProps<T>): JSX.Elem
                     </ul>
                 )}
             </RovingTabIndexProvider>
+            {phoneTabs.phone && !phoneTabs.showingList && tab && (
+                <PhoneTabHeader label={_t(tab.label)} onBack={phoneTabs.backToList} />
+            )}
             {panel}
         </div>
     );

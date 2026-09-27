@@ -6,10 +6,12 @@ encryption needs. Nothing here is specific to Start9; the deployment choices are
 
 ## Keyless mode
 
-When the homeserver's `.well-known/matrix/client` sets `io.element.e2ee.force_disable`, the client never initialises
-crypto, and every screen that would push the user towards encryption, verification, key backup or recovery is
-omitted. Informational hints stay (the composer's open padlock, the "Not encrypted" badge). Keyed homeservers are
-unaffected. No configuration is needed beyond the well-known.
+When the homeserver's `.well-known/matrix/client` sets `io.element.e2ee.force_disable`, or config.json sets
+`force_disable_encryption`, the client never initialises crypto and shows no sign of encryption at all: no screen
+pushes the user towards encryption, verification, key backup or recovery, and there are no "unencrypted" hints either
+(no open padlock or "unencrypted" placeholder in the composer, no "Not encrypted" badge, no encryption toggles in room
+creation or room settings, no rules for encrypted messages in notification settings). Keyed homeservers are
+unaffected.
 
 This is the `master` branch, released as `v<upstream>-start9.<n>` and `:latest`. The `e2ee` branch, released as
 `v<upstream>-start9-e2ee.<n>`, carries everything below over upstream's own handling of encryption, for a homeserver
@@ -21,7 +23,8 @@ Below 768px the client shows one pane at a time: the room list, the room, or a r
 room info, with a back button in the room header. Dialogs and the sign-in, register and forgot-password pages fit
 the screen. The room header keeps the room name, threads and room info and drops the call buttons and member
 avatars; the search box shows no keyboard shortcut. The composer stays above the on-screen keyboard, and an
-installed app keeps clear of the notch and home indicator. Phone browsers are no longer redirected to a native-app
+installed app keeps clear of the notch and home indicator. The settings dialogs (user, room and space) show their
+tabs as a list; picking one opens that tab's page with a back button to the list. Phone browsers are no longer redirected to a native-app
 page, the client offers no app-store links, and a current phone browser (Chrome, Firefox, Safari, Edge, Samsung
 Internet) is not warned as unsupported.
 
@@ -50,6 +53,8 @@ to an app on the Home Screen, so it pairs with the manifest above.
 
 All keys are optional; the default is upstream's behaviour.
 
+- `force_disable_encryption` (boolean): run in keyless mode whatever the homeserver's well-known says, for a
+  deployment whose well-known the client cannot reach (or a local homeserver without HTTPS).
 - `disable_phone_login` (boolean): hide the phone-number option on sign in and the phone field on registration,
   while keeping email. Upstream's `disable_3pid_login` removes both email and phone, which breaks registration on a
   homeserver that requires an email address.

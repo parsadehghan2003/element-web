@@ -43,6 +43,22 @@ describe("PreferencesUserSettingsTab", () => {
         expect(asFragment()).toMatchSnapshot();
     });
 
+    describe("when crypto is disabled", () => {
+        it("shows no toggle for previews in encrypted rooms", () => {
+            const client = getMockClientWithEventEmitter({
+                ...mockClientMethodsServer(),
+                ...mockClientMethodsUser(),
+                getCrypto: jest.fn().mockReturnValue(undefined),
+            });
+            MatrixClientBackedController.matrixClient = client;
+            // an earlier test's stubClient() may still own the peg
+            jest.spyOn(MatrixClientPeg, "get").mockReturnValue(client);
+            renderTab();
+            expect(screen.getByText("Enable previews")).toBeInTheDocument();
+            expect(screen.queryByText("Enable previews in encrypted rooms")).toBeNull();
+        });
+    });
+
     it("should reload when changing language", async () => {
         const reloadStub = jest.fn();
         PlatformPeg.get()!.reload = reloadStub;

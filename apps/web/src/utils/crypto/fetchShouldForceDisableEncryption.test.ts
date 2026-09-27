@@ -44,4 +44,11 @@ describe("fetchShouldForceDisableEncryption", () => {
         expect(await fetchShouldForceDisableEncryption(client)).toBe(false);
         expect(fetchMock.callHistory.called(wellKnownUrl)).toBe(false);
     });
+
+    it("is true without fetching when config force-disables encryption", async () => {
+        SdkConfig.add({ force_disable_encryption: true });
+        fetchMock.get(wellKnownUrl, 404);
+        expect(await fetchShouldForceDisableEncryption(client)).toBe(true);
+        expect(fetchMock.callHistory.called(wellKnownUrl)).toBe(false);
+    });
 });

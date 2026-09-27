@@ -43,6 +43,7 @@ import SidebarUserSettingsTab from "../settings/tabs/user/SidebarUserSettingsTab
 import KeyboardUserSettingsTab from "../settings/tabs/user/KeyboardUserSettingsTab";
 import SessionManagerTab from "../settings/tabs/user/SessionManagerTab";
 import { UserTab } from "./UserTab";
+import { usePhoneLayout } from "../../../hooks/usePhoneLayout";
 import { type NonEmptyArray } from "../../../@types/common";
 import { SDKContext } from "../../../contexts/SDKContext";
 import { type SDKContextClass } from "../../../contexts/SDKContextClass";
@@ -261,6 +262,8 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
     };
 
     const [activeTabId, _setActiveTabId] = useActiveTabWithDefault(getTabs(), UserTab.Account, props.initialTabId);
+    // On a phone the tab's page names itself, and the list of tabs is just "Settings".
+    const phone = usePhoneLayout();
     const setActiveTabId = (tabId: UserTab): void => {
         _setActiveTabId(tabId);
         // Clear these so switching away from the tab and back to it will not show the QR code again
@@ -281,7 +284,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
                     className="mx_UserSettingsDialog"
                     hasCancel={true}
                     onFinished={props.onFinished}
-                    title={titleForTabID(activeTabId)}
+                    title={phone ? _t("common|settings") : titleForTabID(activeTabId)}
                     titleClass="mx_UserSettingsDialog_title"
                 >
                     <div className="mx_SettingsDialog_content">

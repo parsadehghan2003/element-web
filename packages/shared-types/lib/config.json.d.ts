@@ -37,6 +37,8 @@ export interface WebConfigJson {
     disable_login_language_selector?: boolean;
     disable_3pid_login?: boolean;
     disable_phone_login?: boolean;
+    /** Run without crypto (keyless mode) whatever the homeserver's well-known says. */
+    force_disable_encryption?: boolean;
 
     /**
      * Whether the app may make runtime requests to the user's `<server_name>/.well-known/matrix/...`

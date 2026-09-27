@@ -78,10 +78,10 @@ the client never initialises crypto (`fetchShouldForceDisableEncryption`, called
 Everything else follows from `client.getCrypto()` being undefined, a state upstream already tolerates for its
 low-bandwidth mode; each component that still rendered encryption UI in that state guards itself.
 
-The bar for what to remove: the user may learn that encryption is off, but nothing may look like an error or push
-them to enable encryption, verify a session, or set up backup or recovery. Upstream's informational hints stay: the
-composer's open padlock and "unencrypted" placeholder, the "Not encrypted" badge, and the disabled encryption toggles
-with their explanations.
+The bar for what to remove: nothing may mention encryption at all. The user is not told encryption is off, and
+nothing may look like an error or push them to enable encryption, verify a session, or set up backup or recovery.
+Upstream's informational hints go too: the composer's open padlock and "unencrypted" placeholder, the "Not encrypted"
+badge, the encryption toggles, and settings that only apply to encrypted rooms.
 
 Rules for a patch, so that upstream merges stay cheap:
 
@@ -102,7 +102,18 @@ Rules for a patch, so that upstream merges stay cheap:
 
 Upstream files carrying a keyless patch, on `master` only (under `apps/web/src/`):
 
-- `MatrixClientPeg.ts` — skip crypto initialisation, the only place the well-known decides anything.
+- `MatrixClientPeg.ts` — skip crypto initialisation, the only place the well-known (or `force_disable_encryption` in
+  config, read in `utils/crypto/fetchShouldForceDisableEncryption.ts`) decides anything.
+- `components/views/rooms/MessageComposer.tsx` — no open padlock, and "Send a message…" rather than "Send an
+  unencrypted message…" (`keylessComposerPlaceholder.ts`).
+- `components/views/right_panel/RoomSummaryCardView.tsx` — no "Not encrypted" badge.
+- `components/views/dialogs/CreateRoomDialog.tsx` — no encryption toggles.
+- `components/views/settings/tabs/room/{SecurityRoomSettingsTab,RolesRoomSettingsTab,VoipRoomSettingsTab}.tsx` — no
+  encryption toggle, no "enable encryption" power level, no "end-to-end encrypted" call caption.
+- `components/views/settings/tabs/user/{PreferencesUserSettingsTab,SessionManagerTab}.tsx` and
+  `components/views/settings/devices/DeviceMetaData.tsx` — no "previews in encrypted rooms" toggle, no "verify your
+  sessions" advice, no Verified/Unverified on sessions.
+- `components/views/settings/Notifications.tsx` — no rules for encrypted messages.
 - `verification.ts` — pending-verification lookup tolerates missing crypto.
 - `device-listener/DeviceListenerCurrentDevice.ts` — no setup-encryption toast when the homeserver force-disables
   encryption and no room is encrypted; covers a session that started while the well-known was unreachable.
@@ -119,6 +130,11 @@ Upstream files carrying a keyless patch, on `master` only (under `apps/web/src/`
 Upstream files carrying a patch on both branches (under `apps/web/src/` unless noted):
 
 - `MatrixClientPeg.ts` — start web push once the client runs.
+- `components/structures/TabbedView.tsx` — on a phone, the tabs are a list and a tab opens as its own page with a back
+  button (`PhoneTabs.tsx`, styled in `res/css/start9/mobile.pcss`).
+- `components/views/dialogs/UserSettingsDialog.tsx` — on a phone the title is just "Settings"; the tab's page names
+  itself.
+- `packages/shared-types/lib/config.json.d.ts` (repository root) — `force_disable_encryption`.
 - `components/views/rooms/RoomHeader/RoomHeader.tsx` — mounts `BackToRoomListButton`; no call buttons on phones, so
   the room name keeps its width.
 - `vector/index.ts` — imports the mobile stylesheet; no redirect of phone browsers to the native-app page; a chunk
