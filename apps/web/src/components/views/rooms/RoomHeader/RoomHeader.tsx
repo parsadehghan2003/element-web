@@ -36,7 +36,7 @@ import { useEncryptionStatus } from "../../../../hooks/useEncryptionStatus.ts";
 import { E2EStatus } from "../../../../utils/ShieldUtils.ts";
 import FacePile from "../../elements/FacePile.tsx";
 import { useRoomState } from "../../../../hooks/useRoomState.ts";
-import RoomAvatar from "../../avatars/RoomAvatar.tsx";
+import RoomAvatar from "../../avatars/RoomAvatar";
 import { formatCount } from "../../../../utils/FormattingUtils.ts";
 import PosthogTrackers from "../../../../PosthogTrackers.ts";
 import { VideoRoomChatButton } from "./VideoRoomChatButton.tsx";
@@ -49,6 +49,8 @@ import WithPresenceIndicator, { useDmMember } from "../../avatars/WithPresenceIn
 import { type IOOBData } from "../../../../stores/ThreepidInviteStore.ts";
 import { MainSplitContentType } from "../../../../contexts/RoomContext.ts";
 import defaultDispatcher from "../../../../dispatcher/dispatcher.ts";
+import { BackToRoomListButton } from "./BackToRoomListButton";
+import { usePhoneLayout } from "../../../../hooks/usePhoneLayout";
 import { RoomSettingsTab } from "../../dialogs/RoomSettingsDialog-tab";
 import { useScopedRoomContext } from "../../../../contexts/ScopedRoomContext.tsx";
 import { ToggleableIcon } from "./toggle/ToggleableIcon.tsx";
@@ -284,11 +286,12 @@ function RoomHeaderButtons({
         voiceCallButton = undefined;
     }
 
-    if (!showVideoCallButton) {
+    const phoneLayout = usePhoneLayout();
+    if (!showVideoCallButton || phoneLayout) {
         videoCallButton = undefined;
     }
 
-    if (!showVoiceCallButton) {
+    if (!showVoiceCallButton || phoneLayout) {
         voiceCallButton = undefined;
     }
 
@@ -463,6 +466,7 @@ export default function RoomHeader({
     return (
         <CurrentRightPanelPhaseContextProvider roomId={room.roomId}>
             <Flex as="header" align="center" gap="var(--cpd-space-3x)" className="mx_RoomHeader light-panel">
+                <BackToRoomListButton />
                 <WithPresenceIndicator room={room}>
                     {/* We hide this from the tabIndex list as it is a pointer shortcut and superfluous for a11y */}
                     {/* Disable on-click actions until the room is created */}
@@ -472,7 +476,7 @@ export default function RoomHeader({
                         oobData={oobData}
                         onClick={room instanceof LocalRoom ? undefined : onAvatarClick}
                         tabIndex={-1}
-                        aria-label={_t("room|header_avatar_open_settings_label")}
+                        altText={_t("room|header_avatar_open_settings_label")}
                     />
                 </WithPresenceIndicator>
                 {/* Disable on-click actions until the room is created */}
@@ -485,6 +489,7 @@ export default function RoomHeader({
                             : () => sdkContext.rightPanelStore.showOrHidePhase(RightPanelPhases.RoomSummary)
                     }
                     className="mx_RoomHeader_infoWrapper"
+                    type="button"
                 >
                     <Box flex="1" className="mx_RoomHeader_info">
                         <Text

@@ -23,6 +23,7 @@ import { Form, SettingsToggleInput } from "@vector-im/compound-web";
 
 import Spinner from "../elements/Spinner";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import { isCryptoDisabled } from "../../../utils/crypto/isCryptoDisabled";
 import {
     ContentRules,
     type IContentRules,
@@ -53,6 +54,7 @@ import { SettingsSubsection } from "./shared/SettingsSubsection";
 import { doesRoomHaveUnreadMessages } from "../../../Unread";
 import SettingsFlag from "../elements/SettingsFlag";
 import { onSubmitPreventDefault } from "../../../utils/form.ts";
+import { keywordRuleId } from "../../../models/notificationsettings/keywordRuleId.ts";
 
 // TODO: this "view" component still has far too much application logic in it,
 // which should be factored out to other files.
@@ -199,6 +201,11 @@ const NotificationActivitySettings = (): JSX.Element => {
             }}
         >
             <SettingsFlag name="Notifications.showbold" level={SettingLevel.DEVICE} />
+            <SettingsFlag
+                name="Notifications.activityIsUnread"
+                level={SettingLevel.DEVICE}
+                requires={["Notifications.showbold"]}
+            />
             <SettingsFlag name="Notifications.tac_only_notifications" level={SettingLevel.DEVICE} />
         </Form.Root>
     );
@@ -232,13 +239,12 @@ export default class Notifications extends React.PureComponent<EmptyObject, ISta
     public componentDidMount(): void {
         this.settingWatchers = [
             SettingsStore.watchSetting("deviceNotificationsEnabled", null, (...[, , , , value]) => {
-                this.setState({ deviceNotificationsEnabled: value as boolean });
+                this.setState({ deviceNotificationsEnabled: value! });
             }),
         ];
 
-        // noinspection JSIgnoredPromiseFromCall
-        this.refreshFromServer();
-        this.refreshFromAccountData();
+        void this.refreshFromServer();
+        void this.refreshFromAccountData();
     }
 
     public componentWillUnmount(): void {
@@ -247,7 +253,7 @@ export default class Notifications extends React.PureComponent<EmptyObject, ISta
 
     public componentDidUpdate(prevProps: Readonly<EmptyObject>, prevState: Readonly<IState>): void {
         if (this.state.deviceNotificationsEnabled !== prevState.deviceNotificationsEnabled) {
-            this.persistLocalNotificationSettings(this.state.deviceNotificationsEnabled);
+            void this.persistLocalNotificationSettings(this.state.deviceNotificationsEnabled);
         }
     }
 
@@ -348,9 +354,13 @@ export default class Notifications extends React.PureComponent<EmptyObject, ISta
         // Prepare rendering for all of our known rules
         preparedNewState.vectorPushRules = {};
         const vectorCategories = [RuleClass.VectorGlobal, RuleClass.VectorMentions, RuleClass.VectorOther];
+        const cryptoDisabled = isCryptoDisabled();
         for (const category of vectorCategories) {
             preparedNewState.vectorPushRules[category] = [];
             for (const rule of defaultRules[category]) {
+                // Without crypto there are no encrypted rooms, so no rules for encrypted messages to show.
+                if (cryptoDisabled && [RuleId.EncryptedDM, RuleId.EncryptedMessage].includes(rule.rule_id as RuleId))
+                    continue;
                 const definition: VectorPushRuleDefinition = VectorPushRulesDefinitions[rule.rule_id];
                 const vectorState = definition.ruleToVectorState(rule)!;
                 preparedNewState.vectorPushRules[category].push({
@@ -565,13 +575,16 @@ export default class Notifications extends React.PureComponent<EmptyObject, ISta
                 ruleVectorState = existingRuleVectorState ?? VectorState.On; //default
             }
             const kind = PushRuleKind.ContentSpecific;
+            const ruleIds = new Set(originalRules.map((r) => r.rule_id));
             for (const word of diff.added) {
-                await MatrixClientPeg.safeGet().addPushRule("global", kind, word, {
+                const ruleId = keywordRuleId(word, ruleIds);
+                ruleIds.add(ruleId);
+                await MatrixClientPeg.safeGet().addPushRule("global", kind, ruleId, {
                     actions: PushRuleVectorState.actionsFor(ruleVectorState),
                     pattern: word,
                 });
                 if (ruleVectorState === VectorState.Off) {
-                    await MatrixClientPeg.safeGet().setPushRuleEnabled("global", kind, word, false);
+                    await MatrixClientPeg.safeGet().setPushRuleEnabled("global", kind, ruleId, false);
                 }
             }
 

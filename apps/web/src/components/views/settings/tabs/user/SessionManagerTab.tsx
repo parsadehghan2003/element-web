@@ -199,7 +199,7 @@ const SessionManagerTab: React.FC<{
 
     const onVerifyCurrentDevice = (): void => {
         const { finished } = Modal.createDialog(SetupEncryptionDialog);
-        finished.then(refreshDevices);
+        void finished.then(refreshDevices);
     };
 
     const onTriggerDeviceVerification = useCallback(
@@ -212,9 +212,9 @@ const SessionManagerTab: React.FC<{
                 verificationRequestPromise,
                 member: currentUserMember,
             });
-            finished.then(async () => {
+            void finished.then(async () => {
                 const request = await verificationRequestPromise;
-                request.cancel();
+                void request.cancel();
                 await refreshDevices();
             });
         },
@@ -247,7 +247,7 @@ const SessionManagerTab: React.FC<{
     const signOutAllOtherSessions =
         shouldShowOtherSessions && !disableMultipleSignout
             ? () => {
-                  onSignOutOtherDevices(Object.keys(otherDevices));
+                  void onSignOutOtherDevices(Object.keys(otherDevices));
               }
             : undefined;
 
@@ -306,7 +306,7 @@ const SessionManagerTab: React.FC<{
                                 disabled={!!signingOutDeviceIds.length}
                             />
                         }
-                        description={_t("settings|sessions|best_security_note")}
+                        description={matrixClient.getCrypto() ? _t("settings|sessions|best_security_note") : undefined}
                         data-testid="other-sessions-section"
                         stretchContent
                     >

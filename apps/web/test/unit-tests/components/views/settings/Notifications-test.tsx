@@ -479,6 +479,24 @@ describe("<Notifications />", () => {
             expect(screen.getByTestId("notif-section-vector_other")).toBeInTheDocument();
         });
 
+        describe("when crypto is disabled", () => {
+            beforeEach(() => {
+                (mockClient as unknown as { getCrypto: jest.Mock }).getCrypto = jest.fn().mockReturnValue(undefined);
+            });
+            afterEach(() => {
+                delete (mockClient as unknown as { getCrypto?: jest.Mock }).getCrypto;
+            });
+
+            it("shows no rules for encrypted messages", async () => {
+                await getComponentAndWait();
+                const globalSection = screen.getByTestId("notif-section-vector_global");
+                // the 4 global rules less the two for encrypted messages
+                expect(globalSection.querySelectorAll("fieldset").length).toEqual(2);
+                expect(screen.queryByText("Encrypted messages in one-to-one chats")).toBeNull();
+                expect(screen.queryByText("Encrypted messages in group chats")).toBeNull();
+            });
+        });
+
         it("renders radios correctly", async () => {
             await getComponentAndWait();
             const section = "vector_global";
@@ -855,6 +873,20 @@ describe("<Notifications />", () => {
             expect(mockClient.addPushRule).toHaveBeenCalledWith("global", PushRuleKind.ContentSpecific, "jest", {
                 actions: [PushRuleActionName.Notify, { set_tweak: "highlight", value: false }],
                 pattern: "jest",
+            });
+        });
+
+        it("adds a keyword that starts with a dot", async () => {
+            await getComponentAndWait();
+
+            await userEvent.type(screen.getByLabelText("Keyword"), ".jest");
+
+            fireEvent.click(screen.getByText("Add"));
+
+            // The homeserver rejects a rule id beginning with a dot, so only the pattern keeps it.
+            expect(mockClient.addPushRule).toHaveBeenCalledWith("global", PushRuleKind.ContentSpecific, "jest", {
+                actions: [PushRuleActionName.Notify, { set_tweak: "highlight", value: false }],
+                pattern: ".jest",
             });
         });
 

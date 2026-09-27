@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="24x24" href="<%= require('../../res/vector-icons/24.png') %>">
     <link rel="icon" type="image/png" sizes="144x144" href="<%= require('../../res/vector-icons/144.png') %>">
     <link rel="icon" type="image/png" sizes="512x512" href="<%= require('../../res/vector-icons/512.png') %>">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-title" content="Element">
     <meta name="application-name" content="Element">
     <meta name="theme-color" content="#ffffff">
@@ -29,7 +29,7 @@
         worker-src 'self' blob: <%= csp_extra_source %>;
         frame-src * blob: data:;
         form-action 'self' <%= csp_extra_source %>;
-        manifest-src 'self' <%= csp_extra_source %>;
+        manifest-src 'self' blob: <%= csp_extra_source %>;
     ">
     <% for (var i=0; i < htmlWebpackPlugin.files.css.length; i++) {
         var file = htmlWebpackPlugin.files.css[i];

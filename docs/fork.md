@@ -1,0 +1,95 @@
+# What this fork changes
+
+[Start9Labs/element-web](https://github.com/Start9Labs/element-web) tracks upstream Element Web releases and adds
+a phone layout, an installable app and push notifications, plus what a homeserver that runs without end-to-end
+encryption needs. Nothing here is specific to Start9; the deployment choices are configuration.
+
+## Keyless mode
+
+When the homeserver's `.well-known/matrix/client` sets `io.element.e2ee.force_disable`, or config.json sets
+`force_disable_encryption`, the client never initialises crypto and shows no sign of encryption at all: no screen
+pushes the user towards encryption, verification, key backup or recovery, and there are no "unencrypted" hints either
+(no open padlock or "unencrypted" placeholder in the composer, no "Not encrypted" badge, no encryption toggles in room
+creation or room settings, no rules for encrypted messages in notification settings). Keyed homeservers are
+unaffected.
+
+This is the `master` branch, released as `v<upstream>-start9.<n>` and `:latest`. The `e2ee` branch, released as
+`v<upstream>-start9-e2ee.<n>`, carries everything below over upstream's own handling of encryption, for a homeserver
+that keeps it on.
+
+## Phone layout
+
+Below 768px the client shows one pane at a time: the room list, the room, or a right-panel card such as a thread or
+room info, with a back button in the room header. Dialogs and the sign-in, register and forgot-password pages fit
+the screen. The room header keeps the room name, threads and room info and drops the call buttons and member
+avatars; the search box shows no keyboard shortcut. The composer stays above the on-screen keyboard, and an
+installed app keeps clear of the notch and home indicator. The settings dialogs (user, room and space) show their
+tabs as a list; picking one opens that tab's page with a back button to the list. Phone browsers are no longer redirected to a native-app
+page, the client offers no app-store links, and a current phone browser (Chrome, Firefox, Safari, Edge, Samsung
+Internet) is not warned as unsupported.
+
+## Stale pages
+
+A page left open across a deploy tells the user it is out of date and how to reload, instead of failing silently the
+next time it needs part of the app it can no longer fetch.
+
+## Installable app
+
+The client installs as a standalone app: on Android and desktop Chrome or Edge from the address bar or browser menu,
+on iOS from Share, then Add to Home Screen. `web_app_manifest` gives the installed app the deployment's name and
+icon; without it the app installs as Element. Once installed, unread counts show on the app icon where the platform
+supports badges.
+
+## Push notifications
+
+With `web_push` configured, a signed-in client that has notifications enabled subscribes to the browser's push
+service and registers a pusher with the homeserver, so messages arrive while the app is closed, through Sygnal's
+WebPush pushkin. The service worker shows the notification, badges the app icon with the unread count, and opens
+the room when it is tapped. Turning notifications off in Element's settings removes the pusher again, as does a
+deployment that drops `web_push`; a changed `gateway_url` is re-registered on the next launch. iOS delivers push only
+to an app on the Home Screen, so it pairs with the manifest above.
+
+## Configuration added
+
+All keys are optional; the default is upstream's behaviour.
+
+- `force_disable_encryption` (boolean): run in keyless mode whatever the homeserver's well-known says, for a
+  deployment whose well-known the client cannot reach (or a local homeserver without HTTPS).
+- `disable_phone_login` (boolean): hide the phone-number option on sign in and the phone field on registration,
+  while keeping email. Upstream's `disable_3pid_login` removes both email and phone, which breaks registration on a
+  homeserver that requires an email address.
+- `branding.auth_footer_powered_by_matrix` (boolean): set to `false` to drop the "Powered by Matrix" link from the
+  footer of the sign-in and registration pages. `branding.auth_footer_links` still applies.
+- `web_app_manifest` (object): members merged over the built-in web app manifest — `name`, `short_name` (defaults to
+  `name`), `description`, `icons`, `theme_color`, `background_color`. Icon `src` values are URLs relative to the app
+  root, served by the deployment the same way as `branding.auth_header_logo_url`; when given they also replace the
+  favicon and the iOS touch icons. A square PNG of 512px with the mark inside the central 80% works everywhere:
+
+    ```json
+    "web_app_manifest": {
+        "name": "Support",
+        "icons": [{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }],
+        "background_color": "#f0f0f0"
+    }
+    ```
+
+- `web_push` (object): `gateway_url` is Sygnal's notify endpoint, `app_id` the app configured there with the WebPush
+  pushkin, and `application_server_key` its VAPID public key in base64url. Sygnal must run alongside the homeserver:
+  the pusher sends it the room name, sender and message text, which it encrypts for the browser. `homeservers`, when
+  given, lists the hostnames of the homeservers that can reach the gateway; a session on any other homeserver
+  registers no pusher, for a gateway on a private address.
+
+    ```json
+    "web_push": {
+        "gateway_url": "https://sygnal.example.org/_matrix/push/v1/notify",
+        "app_id": "org.example.chat",
+        "application_server_key": "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U"
+    }
+    ```
+
+- `mobile_builds`: upstream defaults this to Element's app-store listings; the fork defaults it to none. Set it to
+  offer native apps on the unsupported-browser page.
+
+Two upstream keys worth knowing here: `embedded_pages.login_for_welcome: true` lands logged-out visitors on Sign in
+instead of the welcome page, and `setting_defaults."UIFeature.identityServer": false` hides identity-server features,
+which also stops the registration form promising discovery by email.

@@ -36,6 +36,9 @@ export interface WebConfigJson {
     disable_guests?: boolean;
     disable_login_language_selector?: boolean;
     disable_3pid_login?: boolean;
+    disable_phone_login?: boolean;
+    /** Run without crypto (keyless mode) whatever the homeserver's well-known says. */
+    force_disable_encryption?: boolean;
 
     /**
      * Whether the app may make runtime requests to the user's `<server_name>/.well-known/matrix/...`
@@ -51,6 +54,24 @@ export interface WebConfigJson {
         logo_link_url?: string;
         auth_header_logo_url?: string;
         auth_footer_links?: { text: string; url: string }[];
+        auth_footer_powered_by_matrix?: boolean;
+    };
+    web_app_manifest?: {
+        // merged over the built-in manifest; icons also replace the favicon and touch icons
+        name?: string;
+        short_name?: string;
+        description?: string;
+        icons?: { src: string; sizes?: string; type?: string; purpose?: string }[];
+        theme_color?: string;
+        background_color?: string;
+    };
+    web_push?: {
+        // a Sygnal WebPush app: its notify URL, app_id, and VAPID public key in base64url
+        gateway_url: string;
+        app_id: string;
+        application_server_key: string;
+        // hostnames of the homeservers that can reach the gateway; a session elsewhere registers no pusher
+        homeservers?: string[];
     };
 
     force_verification?: boolean; // if true, users must verify new logins

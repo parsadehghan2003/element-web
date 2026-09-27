@@ -22,6 +22,7 @@ import { LockOffIcon, SendSolidIcon } from "@vector-im/compound-design-tokens/as
 import { useCreateAutoDisposedViewModel } from "@element-hq/web-shared-components";
 
 import { _t } from "../../../languageHandler";
+import { keylessComposerPlaceholder } from "./keylessComposerPlaceholder";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import dis from "../../../dispatcher/dispatcher";
 import { type ActionPayload } from "../../../dispatcher/payloads";
@@ -324,7 +325,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
         // Otherwise, wait for member loading to finish and then update the member for the avatar.
         // The members should already be loading, and loadMembersIfNeeded
         // will return the promise for the existing operation
-        this.props.room.loadMembersIfNeeded().then(() => {
+        void this.props.room.loadMembersIfNeeded().then(() => {
             const me = this.props.room.getMember(MatrixClientPeg.safeGet().getSafeUserId()) ?? undefined;
             this.setState({ me });
         });
@@ -371,6 +372,8 @@ export class MessageComposer extends React.Component<IProps, IState> {
     };
 
     private renderPlaceholderText = (): string => {
+        const keyless = keylessComposerPlaceholder(this.props.room, this.props.replyToEvent, this.props.relation);
+        if (keyless) return keyless;
         if (this.props.replyToEvent) {
             const replyingToThread = this.props.relation?.rel_type === THREAD_RELATION_TYPE.name;
             if (replyingToThread && this.props.e2eStatus) {
@@ -413,7 +416,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
             return;
         }
 
-        this.messageComposerInput.current?.sendMessage({ urlPreviewSnapshot });
+        void this.messageComposerInput.current?.sendMessage({ urlPreviewSnapshot });
 
         if (this.state.isWysiwygLabEnabled) {
             const { relation, replyToEvent } = this.props;
@@ -540,7 +543,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
     }
 
     private onRecordStartEndClick = (): void => {
-        this.voiceRecordingButton.current?.onRecordStartEndClick();
+        void this.voiceRecordingButton.current?.onRecordStartEndClick();
 
         if (this.context.narrow) {
             this.toggleButtonMenu();
@@ -577,6 +580,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                 );
             }
         }
+        if (!this.props.room.client.getCrypto()) leftIcon = false;
 
         const controls: ReactNode[] = [];
         const menuPosition = this.getMenuPosition();
@@ -762,7 +766,7 @@ export default function MessageComposerWrapper(props: Omit<IProps, "mxClient" | 
     );
 
     useEffect(() => {
-        void urlPreviewVm.updateUrlPreviewVisible(showUrlPreview);
+        urlPreviewVm.updateUrlPreviewVisible(showUrlPreview);
     }, [urlPreviewVm, showUrlPreview]);
 
     return <MessageComposerWithMatrixClient {...props} urlPreviewVm={urlPreviewVm} />;

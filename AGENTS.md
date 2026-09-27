@@ -1,0 +1,244 @@
+# Start9 fork of Element Web
+
+Start9's fork of [element-hq/element-web](https://github.com/element-hq/element-web): the web client at
+`support.start9.me`, shipped as `ghcr.io/start9labs/element-web` and deployed by `ansible-matrix-support`.
+Upstream's own docs still apply — [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md),
+[developer_guide.md](developer_guide.md), `docs/`. This file covers only what is different here.
+
+`start9.me` runs with end-to-end encryption disabled and its users keyless, so the client has to work well
+with encryption off, on a phone, and installed as a PWA. Upstream is built for the opposite: it nags to set
+up encryption, sends phone browsers to the native apps, and lays out for the desktop.
+
+## Branches
+
+- `master` is the fork: an upstream release tag with our patches on top. Work lands through a pull request
+  against it now that production runs a tag cut from it; nothing deploys `master` itself.
+- `e2ee` is `master` without keyless mode, for a homeserver that keeps end-to-end encryption on: the phone, PWA and
+  push patches over upstream's own handling of encryption, with the keyless files listed under Patches at upstream's
+  version. Everything lands on `master` first and is merged down — `git merge master` on `e2ee`, pushed directly;
+  never merge `e2ee` into `master`. A conflict in a keyless file resolves to upstream's file at the base tag
+  (`git checkout v1.12.28 -- <file>`), and `git diff v1.12.28 -- <those files>` must come back empty afterwards but
+  for the web push line in `MatrixClientPeg.ts`.
+- Upstream is merged, never rebased, so history stays shared and each release lands as one merge. Merge
+  release tags only, never `develop`.
+- `upstream` remote: `git remote add upstream https://github.com/element-hq/element-web.git`.
+- `gh` sees a fork and aims pull requests at element-hq by default; `gh repo set-default Start9Labs/element-web` once
+  per clone, or pass `--repo Start9Labs/element-web`.
+
+## Taking an upstream release
+
+```bash
+git fetch upstream --tags
+git merge -Xignore-space-change v1.12.28   # on master
+pnpm lint:fmt:fix                          # re-indent the blocks a patch wraps
+# resolve what is left, run the checks below
+git push origin master v1.12.28            # the image build reads its version from the nearest tag
+git switch e2ee && git merge master        # keyless files back to upstream's, the checks again, push
+```
+
+`-Xignore-space-change` lets upstream's edits win inside a block a patch only re-indented; the formatter puts the
+indentation back. Upstream's workflows are disabled in the repo's Actions settings rather than deleted, so
+`.github/workflows/` never conflicts. After a merge, disable anything a release added:
+
+```bash
+gh workflow list --all   # everything except "Start9" should read `disabled_manually`
+gh workflow disable <name>
+```
+
+## Releasing
+
+Tag `master` as `v<upstream>-start9.<n>`, for example `v1.12.27-start9.1`, and `e2ee` as `v<upstream>-start9-e2ee.<n>`.
+The `Start9` workflow publishes `ghcr.io/start9labs/element-web:<tag>` for amd64 and arm64 once the test jobs pass,
+plus `:latest` for a `master` tag; a push to `master` or `e2ee` publishes `:<branch>` and `:sha-<short>` without
+waiting for them. Production deploys by pointing `matrix_client_element_container_image` in `ansible-matrix-support`
+at a tag.
+
+## Checks
+
+CI runs upstream's full jest and vitest suites, so an upstream merge that breaks a patch fails there. Locally, run
+the files you touched:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm exec nx run element-web:test:unit:prepare
+cd apps/web && pnpm exec vitest run src/hooks src/utils/crypto   # vitest: src/**/*.test.ts*
+cd apps/web && pnpm exec jest test/unit-tests/components/views/settings/devices   # jest: test/unit-tests/**/*-test.ts*
+```
+
+`lint:types` is red at upstream's own release tags at the moment (matrix-js-sdk under TypeScript 7), so check it
+with `pnpm exec tsc --noEmit 2>&1 | grep -v MSC4108SignInWithQR` in `apps/web` until that clears.
+
+Build the image from the repo root with `docker buildx bake element-web`. It reads `.git` for the version, so
+build from a clone, not an export.
+
+## Patches
+
+Keyless mode is one decision: when the homeserver's `.well-known/matrix/client` sets `io.element.e2ee.force_disable`,
+the client never initialises crypto (`fetchShouldForceDisableEncryption`, called once from `MatrixClientPeg.assign`).
+Everything else follows from `client.getCrypto()` being undefined, a state upstream already tolerates for its
+low-bandwidth mode; each component that still rendered encryption UI in that state guards itself.
+
+The bar for what to remove: nothing may mention encryption at all. The user is not told encryption is off, and
+nothing may look like an error or push them to enable encryption, verify a session, or set up backup or recovery.
+Upstream's informational hints go too: the composer's open padlock and "unencrypted" placeholder, the "Not encrypted"
+badge, the encryption toggles, and settings that only apply to encrypted rooms.
+
+Rules for a patch, so that upstream merges stay cheap:
+
+- New logic goes in a new file. An upstream file gets an import and a one-line guard, in the component that renders
+  the UI. Never plumb a prop through intermediate components.
+- Gate on `client.getCrypto()` (`useCryptoDisabled()` in function components), not on Start9 or on the well-known.
+  Keyed homeservers keep upstream's behaviour, and the guard doubles as a fix for low-bandwidth mode, which is what
+  makes it worth sending upstream.
+- Prefer adding a line after upstream's block to editing lines inside it. When a wrapper is unavoidable, accept the
+  re-indent; the merge procedure above absorbs it.
+- Tests: fork behaviour in a new test file where the setup is small, otherwise one
+  `describe("when crypto is disabled")` in upstream's test that restores any shared mock afterwards. Where an
+  upstream test pins the exact state a patch changes, update its snapshot rather than bending the test; on a merge
+  that conflicts in a `.snap`, take upstream's file, rerun the suite with `-u`, and check the diff shows only fork
+  behaviour.
+- Add every upstream file touched to the list below; a reader diffing against the base tag uses it to tell ours from
+  theirs.
+
+Upstream files carrying a keyless patch, on `master` only (under `apps/web/src/`):
+
+- `MatrixClientPeg.ts` — skip crypto initialisation, the only place the well-known (or `force_disable_encryption` in
+  config, read in `utils/crypto/fetchShouldForceDisableEncryption.ts`) decides anything.
+- `components/views/rooms/MessageComposer.tsx` — no open padlock, and "Send a message…" rather than "Send an
+  unencrypted message…" (`keylessComposerPlaceholder.ts`).
+- `components/views/right_panel/RoomSummaryCardView.tsx` — no "Not encrypted" badge.
+- `components/views/dialogs/CreateRoomDialog.tsx` — no encryption toggles.
+- `components/views/settings/tabs/room/{SecurityRoomSettingsTab,RolesRoomSettingsTab,VoipRoomSettingsTab}.tsx` — no
+  encryption toggle, no "enable encryption" power level, no "end-to-end encrypted" call caption.
+- `components/views/settings/tabs/user/{PreferencesUserSettingsTab,SessionManagerTab}.tsx` and
+  `components/views/settings/devices/DeviceMetaData.tsx` — no "previews in encrypted rooms" toggle, no "verify your
+  sessions" advice, no Verified/Unverified on sessions.
+- `components/views/settings/Notifications.tsx` — no rules for encrypted messages.
+- `verification.ts` — pending-verification lookup tolerates missing crypto.
+- `device-listener/DeviceListenerCurrentDevice.ts` — no setup-encryption toast when the homeserver force-disables
+  encryption and no room is encrypted; covers a session that started while the well-known was unreachable.
+- `components/views/dialogs/UserSettingsDialog.tsx` — no Encryption tab.
+- `components/views/settings/tabs/user/SecurityUserSettingsTab.tsx` — no encryption section, no "encryption
+  disabled by your admin" warning.
+- `components/views/settings/tabs/user/HelpUserSettingsTab.tsx` — no crypto version line.
+- `components/views/settings/devices/{DeviceTypeIcon,DeviceVerificationStatusCard,SecurityRecommendations,LoginWithQRSection,FilteredDeviceList}.tsx`
+  — a Sessions tab without verification badges, cards, recommendations, filters, or QR sign-in.
+- `components/views/rooms/NewRoomIntro.tsx` — no "encryption isn't enabled" warning in a new DM; upstream already
+  hides it once the well-known is known, this covers the first render after login.
+- `viewmodels/menus/UserMenuViewModel.ts` — no "Link new device" in the user menu without crypto.
+
+Upstream files carrying a patch on both branches (under `apps/web/src/` unless noted):
+
+- `MatrixClientPeg.ts` — start web push once the client runs.
+- `components/structures/TabbedView.tsx` — on a phone, the tabs are a list and a tab opens as its own page with a back
+  button (`PhoneTabs.tsx`, styled in `res/css/start9/mobile.pcss`).
+- `components/views/dialogs/UserSettingsDialog.tsx` — on a phone the title is just "Settings"; the tab's page names
+  itself.
+- `packages/shared-types/lib/config.json.d.ts` (repository root) — `force_disable_encryption`.
+- `components/views/rooms/RoomHeader/RoomHeader.tsx` — mounts `BackToRoomListButton`; no call buttons on phones, so
+  the room name keeps its width.
+- `vector/index.ts` — imports the mobile stylesheet; no redirect of phone browsers to the native-app page; a chunk
+  that fails to load during start-up is reported as a stale page rather than an unexpected error.
+- `SdkConfig.ts` — no app-store links by default, so the unsupported-browser page offers none.
+- `webpack.config.ts` — the native-app guide page is not built.
+- `res/manifest.json` (under `apps/web/`) — no related native applications.
+- `components/views/auth/AuthFooter.tsx` — `branding.auth_footer_powered_by_matrix: false` drops the Matrix link.
+- `components/views/auth/PasswordLogin.tsx` and `RegistrationForm.tsx` — `disable_phone_login`; the registration
+  form only promises discovery by email when `UIFeature.identityServer` is on.
+- `vector/init.tsx` — applies `web_app_manifest` once the config is loaded, starts the visual-viewport fit, and watches
+  for a stale page.
+- `SupportedBrowser.ts` — phones are a supported device type, Samsung Internet is a supported browser, and
+  "Mobile Safari" is judged as Safari, so a current phone browser gets no "unsupported browser" toast.
+- `serviceworker/index.ts` — imports the push handlers.
+- `BasePlatform.ts` — the client's own notifications carry the room id as their tag, so one from the service worker
+  for the same room replaces it instead of doubling up.
+- `vector/index.html` — the content security policy admits the generated manifest (`manifest-src blob:`); the
+  viewport meta asks for `viewport-fit=cover` and `interactive-widget=resizes-content`.
+- `packages/shared-types/lib/config.json.d.ts` — types for the keys above.
+- `i18n/strings/en_EN.json` — the fork's strings live under one `start9` key.
+- `docker/nginx-templates/default.conf.template` (under `apps/web/`) — `sw.js` and `manifest.json` are served
+  `no-cache` like `index.html`, so a deploy replaces the service worker on the next launch rather than within a day.
+- `.github/workflows/start9.yaml` — the only workflow that runs here.
+
+Deployment-specific behaviour is configuration, never code: a key with upstream's behaviour as its default, documented
+in `docs/fork.md`.
+
+Fork-only files: `utils/crypto/fetchShouldForceDisableEncryption.ts` and `hooks/useCryptoDisabled.ts` on `master`
+only; `hooks/usePhoneLayout.ts`, `components/views/rooms/RoomHeader/BackToRoomListButton.tsx`,
+`res/css/start9/mobile.pcss`, `vector/webAppManifest.ts`, `vector/phoneViewport.ts`, `vector/stalePage.tsx`,
+`serviceworker/push.ts`, `utils/push/webPush.ts`, `utils/push/protocol.ts` on both; and their tests.
+
+## Mobile layout
+
+Phones (`max-width: 767px`) show one pane at a time. `res/css/start9/mobile.pcss` does the layout on its own: it
+reads navigation state off the DOM with `:has()` (a `.mx_RoomView` means a room is open, a `.mx_RightPanel` means a
+card covers it), so `LoggedInView`, `RoomView` and the right panel are untouched. `vector/index.ts` imports it, which
+keeps it outside the `app-web` cascade layer every theme stylesheet lives in; an unlayered rule beats a layered one
+whatever the specificity, so the file never fights upstream's selectors. `!important` is reserved for the pane
+group's inline sizes. The only React is `BackToRoomListButton` in the room header, which shows the home page with
+`context_switch` set so the active space survives, and `usePhoneLayout()`, which shares the breakpoint.
+
+The keyboard is handled twice over: `interactive-widget=resizes-content` in the viewport meta makes Chromium shrink
+the layout viewport, and `vector/phoneViewport.ts` does the same by hand for WebKit, which only shrinks the visual
+viewport, by sizing the root to it while it is smaller than the window. `viewport-fit=cover` plus `env(safe-area-inset-*)`
+padding on the app wrapper, the auth page and the fixed overlays keeps an installed app clear of the notch and home
+indicator. Neither can be seen in headless Chromium; they are checked on a phone.
+
+Rules for mobile work:
+
+- Layout goes in that stylesheet, keyed to upstream's structural classes (`mx_MatrixChat`, `mx_LeftPanel_panel`,
+  `mx_RoomView`, `mx_RightPanel_ResizeWrapper`, `mx_Dialog`). Don't reach into component internals; when a rule
+  needs a hook in a component, add one line there and keep the logic in a fork file.
+- Interaction patterns follow Element X; sizes, type and colours are Compound tokens (`--cpd-*`), never literals.
+- Verify by screenshot at a phone viewport against a scratch Synapse before and after, and check a desktop viewport
+  too: the stylesheet must be a no-op above the breakpoint.
+
+## Stale pages
+
+A deploy replaces the build's files, and a page opened before it fails the next time it loads a chunk on demand: on
+the register page that is the password strength check, so Register silently did nothing. `vector/stalePage.tsx`
+turns the first `ChunkLoadError` into a dialog that says the page is out of date, offers Reload, and shows the
+hard-refresh keys for the platform; the same error during start-up gets the same words on the error page. Keep the
+guidance in step with the StartOS docs' hard-refresh instructions.
+
+## Installable app
+
+Upstream's `res/manifest.json`, touch icons and service worker already make the client installable; the fork only
+lets a deployment name and brand it. `vector/webAppManifest.ts` merges `web_app_manifest` from the config over the
+built-in manifest, serves the result from a blob URL in place of the static `manifest.json`, and points the
+`apple-mobile-web-app-title` meta, favicon and touch icons at the same values, so iOS gets the branding whether or
+not it reads the manifest. Without the key nothing runs and upstream's static files stand.
+
+Rules for it:
+
+- Keep `res/manifest.json` upstream's. Deployment branding is `web_app_manifest`; anything else the manifest should
+  say for every deployment is an upstream change.
+- Verify in Chromium through the DevTools protocol (`Page.getAppManifest` and `Page.getInstallabilityErrors` over a
+  Playwright CDP session): headless Chromium never fires `beforeinstallprompt`, so that is the only signal that the
+  served manifest passes the install checks.
+
+## Push
+
+`utils/push/webPush.ts` runs from `MatrixClientPeg.start` and keeps one HTTP pusher in step with Element's own
+notification switch: when `web_push` is configured, notifications are enabled and permission is granted, it subscribes
+through the service worker and registers the subscription with the homeserver in the form Sygnal's WebPush pushkin
+expects (the p256dh key as the pushkey, `endpoint` and `auth` in `data`); when the switch goes off it removes both.
+`serviceworker/push.ts` handles `push` and `notificationclick` in upstream's service worker and is written against
+Sygnal's payload. Nothing runs without the config key.
+
+Rules for it:
+
+- The pusher asks Sygnal for `events_only` so a count-only push never reaches the browser: a push that shows no
+  notification costs the site its permission on iOS after a few, and `only_last_per_room` so a burst collapses at
+  the relay. Keep both.
+- The worker shows nothing while a window of the app is visible, and tags notifications by room; the app's own
+  notifications carry the same tag. Keep those two in step or the same message notifies twice.
+- Types for the worker are hand-written in `push.ts`: the project's `lib` has no worker types and upstream's own
+  worker file casts around that too. Don't add `webworker` to `tsconfig.json` for it.
+- Headless Chromium cannot receive a push, so the worker is unit-tested on its exported functions and the whole path
+  is proven on a phone against a deployment with Sygnal.
+
+## Roadmap
+
+1. Install prompt: an in-app "install" entry from `beforeinstallprompt` where the browser fires it, and a one-time
+   Add to Home Screen hint on iOS Safari.

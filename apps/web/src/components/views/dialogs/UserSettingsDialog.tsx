@@ -43,6 +43,7 @@ import SidebarUserSettingsTab from "../settings/tabs/user/SidebarUserSettingsTab
 import KeyboardUserSettingsTab from "../settings/tabs/user/KeyboardUserSettingsTab";
 import SessionManagerTab from "../settings/tabs/user/SessionManagerTab";
 import { UserTab } from "./UserTab";
+import { usePhoneLayout } from "../../../hooks/usePhoneLayout";
 import { type NonEmptyArray } from "../../../@types/common";
 import { SDKContext } from "../../../contexts/SDKContext";
 import { type SDKContextClass } from "../../../contexts/SDKContextClass";
@@ -53,6 +54,11 @@ import { EncryptionUserSettingsTab, type State } from "../settings/tabs/user/Enc
 interface IProps {
     initialTabId?: UserTab;
     showMsc4108QrCode?: boolean;
+    /*
+     * If true, the Account tab's status control starts in custom status mode,
+     * ready for the user to enter a custom status.
+     */
+    startCustomStatus?: boolean;
     /*
      * The initial state of the Encryption tab.
      * If undefined, the default state is used ("loading").
@@ -102,6 +108,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
     // store these props in state as changing tabs back and forth should clear them
     const [showMsc4108QrCode, setShowMsc4108QrCode] = useState(props.showMsc4108QrCode);
     const [initialEncryptionState, setInitialEncryptionState] = useState(props.initialEncryptionState);
+    const [startCustomStatus, setStartCustomStatus] = useState(props.startCustomStatus);
 
     // If the user doesn't have Recovery set up (no default Secret Storage key),
     // we show an indicator on the Encryption tab.
@@ -131,7 +138,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
                 UserTab.Account,
                 _td("settings|account|title"),
                 <UserProfileIcon />,
-                <AccountUserSettingsTab closeSettingsFn={props.onFinished} />,
+                <AccountUserSettingsTab closeSettingsFn={props.onFinished} startCustomStatus={startCustomStatus} />,
                 "UserSettingsGeneral",
             ),
         );
@@ -212,16 +219,18 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
             ),
         );
 
-        tabs.push(
-            new Tab(
-                UserTab.Encryption,
-                _td("settings|encryption|title"),
-                <KeyIcon />,
-                <EncryptionUserSettingsTab initialState={initialEncryptionState} />,
-                "UserSettingsEncryption",
-                showSetupRecoveryIndicator ? "mx_SettingsDialog_tabLabelsAlert" : undefined,
-            ),
-        );
+        if (props.sdkContext.client?.getCrypto()) {
+            tabs.push(
+                new Tab(
+                    UserTab.Encryption,
+                    _td("settings|encryption|title"),
+                    <KeyIcon />,
+                    <EncryptionUserSettingsTab initialState={initialEncryptionState} />,
+                    "UserSettingsEncryption",
+                    showSetupRecoveryIndicator ? "mx_SettingsDialog_tabLabelsAlert" : undefined,
+                ),
+            );
+        }
 
         if (showLabsFlags() || SettingsStore.getFeatureSettingNames().some((k) => SettingsStore.getBetaInfo(k))) {
             tabs.push(
@@ -253,11 +262,14 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
     };
 
     const [activeTabId, _setActiveTabId] = useActiveTabWithDefault(getTabs(), UserTab.Account, props.initialTabId);
+    // On a phone the tab's page names itself, and the list of tabs is just "Settings".
+    const phone = usePhoneLayout();
     const setActiveTabId = (tabId: UserTab): void => {
         _setActiveTabId(tabId);
         // Clear these so switching away from the tab and back to it will not show the QR code again
         setShowMsc4108QrCode(false);
         setInitialEncryptionState(undefined);
+        setStartCustomStatus(false);
     };
 
     const [activeToast, toastRack] = useActiveToast();
@@ -272,7 +284,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
                     className="mx_UserSettingsDialog"
                     hasCancel={true}
                     onFinished={props.onFinished}
-                    title={titleForTabID(activeTabId)}
+                    title={phone ? _t("common|settings") : titleForTabID(activeTabId)}
                     titleClass="mx_UserSettingsDialog_title"
                 >
                     <div className="mx_SettingsDialog_content">

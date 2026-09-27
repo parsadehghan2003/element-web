@@ -66,7 +66,7 @@ const ElementCallSwitch: React.FC<ElementCallSwitchProps> = ({ room }) => {
                 newContent.events[ElementCallMemberEventType.name] = adminLevel;
             }
 
-            room.client.sendStateEvent(room.roomId, EventType.RoomPowerLevels, newContent);
+            void room.client.sendStateEvent(room.roomId, EventType.RoomPowerLevels, newContent);
         },
         [room.client, room.roomId, content, isPublic],
     );
@@ -78,9 +78,9 @@ const ElementCallSwitch: React.FC<ElementCallSwitchProps> = ({ room }) => {
             name="element-call-switch"
             data-testid="element-call-switch"
             label={_t("room_settings|voip|enable_element_call_label", { brand })}
-            helpMessage={_t("room_settings|voip|enable_element_call_caption", {
-                brand,
-            })}
+            helpMessage={
+                room.client.getCrypto() ? _t("room_settings|voip|enable_element_call_caption", { brand }) : undefined
+            }
             checked={elementCallEnabled}
             onChange={onChange}
             disabled={!maySend}

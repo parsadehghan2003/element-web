@@ -28,6 +28,13 @@ describe("showIncompatibleBrowser", () => {
     beforeEach(setUpMatrixChatDiv);
 
     it("should match snapshot", async () => {
+        SdkConfig.put({
+            mobile_builds: {
+                ios: "https://apps.apple.com/app/vector/id1083446067",
+                android: "https://play.google.com/store/apps/details?id=im.vector.app",
+                fdroid: "https://f-droid.org/repository/browse/?fdid=im.vector.app",
+            },
+        });
         await showIncompatibleBrowser(vi.fn());
         await screen.findByText("Element does not support this browser");
         expect(document.getElementById("matrixchat")).toMatchSnapshot();
@@ -55,6 +62,27 @@ describe("loadApp", () => {
     it("should set window.matrixChat to the MatrixChat instance", async () => {
         await loadApp({});
         await waitFor(() => expect(window.matrixChat).toBeInstanceOf(MatrixChat));
+    });
+
+    it("should replace the previous app rather than leaving it mounted", async () => {
+        await loadApp({});
+        await waitFor(() => expect(window.matrixChat).toBeInstanceOf(MatrixChat));
+        const first = window.matrixChat;
+
+        // Count only what the second load does. We track the mounted/unmounted delta rather than raw
+        // mount count, as StrictMode's extra mount/unmount cycle cancels out in the difference.
+        const mounted = vi.spyOn(MatrixChat.prototype, "componentDidMount");
+        const unmounted = vi.spyOn(MatrixChat.prototype, "componentWillUnmount");
+        const delta = (): number => mounted.mock.calls.length - unmounted.mock.calls.length;
+
+        setUpMatrixChatDiv();
+        await loadApp({});
+        await waitFor(() => expect(window.matrixChat).not.toBe(first));
+
+        // The new app replaces the old one, so the number of live apps is unchanged. A second root over
+        // the same container would instead leave the first tree mounted against a detached node, with both
+        // copies still driven by the dispatcher and the client peg.
+        await waitFor(() => expect(delta()).toBe(0));
     });
 
     it("should pass onTokenLoginCompleted which strips searchParams & fragment to MatrixChat", async () => {

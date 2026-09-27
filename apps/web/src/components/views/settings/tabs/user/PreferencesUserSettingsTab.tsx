@@ -33,6 +33,7 @@ import { IS_MAC } from "../../../../../Keyboard";
 import SpellCheckSettings from "../../SpellCheckSettings";
 import * as TimezoneHandler from "../../../../../TimezoneHandler";
 import { type BooleanSettingKey } from "../../../../../settings/Settings.tsx";
+import { isCryptoDisabled } from "../../../../../utils/crypto/isCryptoDisabled";
 import { MediaPreviewAccountSettings } from "./MediaPreviewAccountSettings.tsx";
 import { InviteRulesAccountSetting } from "./InviteRulesAccountSettings.tsx";
 import SettingsDropdown from "../../../elements/SettingsDropdown.tsx";
@@ -52,7 +53,7 @@ const LanguageSection: React.FC = () => {
         (newLanguage: string) => {
             if (language === newLanguage) return;
 
-            SettingsStore.setValue("language", null, SettingLevel.DEVICE, newLanguage);
+            void SettingsStore.setValue("language", null, SettingLevel.DEVICE, newLanguage);
             setLanguage(newLanguage);
             const platform = PlatformPeg.get();
             if (platform) {
@@ -185,7 +186,7 @@ export default class PreferencesUserSettingsTab extends React.Component<EmptyObj
 
     private onTimezoneChange = (tz: string): void => {
         this.setState({ timezone: tz });
-        TimezoneHandler.setUserTimezone(tz);
+        void TimezoneHandler.setUserTimezone(tz);
     };
 
     /**
@@ -204,17 +205,22 @@ export default class PreferencesUserSettingsTab extends React.Component<EmptyObj
 
     private onAutocompleteDelayChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.setState({ autocompleteDelay: e.target.value });
-        SettingsStore.setValue("autocompleteDelay", null, SettingLevel.DEVICE, e.target.valueAsNumber);
+        void SettingsStore.setValue("autocompleteDelay", null, SettingLevel.DEVICE, e.target.valueAsNumber);
     };
 
     private onReadMarkerInViewThresholdMs = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.setState({ readMarkerInViewThresholdMs: e.target.value });
-        SettingsStore.setValue("readMarkerInViewThresholdMs", null, SettingLevel.DEVICE, e.target.valueAsNumber);
+        void SettingsStore.setValue("readMarkerInViewThresholdMs", null, SettingLevel.DEVICE, e.target.valueAsNumber);
     };
 
     private onReadMarkerOutOfViewThresholdMs = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.setState({ readMarkerOutOfViewThresholdMs: e.target.value });
-        SettingsStore.setValue("readMarkerOutOfViewThresholdMs", null, SettingLevel.DEVICE, e.target.valueAsNumber);
+        void SettingsStore.setValue(
+            "readMarkerOutOfViewThresholdMs",
+            null,
+            SettingLevel.DEVICE,
+            e.target.valueAsNumber,
+        );
     };
 
     private renderGroup(settingIds: BooleanSettingKey[], level = SettingLevel.ACCOUNT): JSX.Element {
@@ -341,11 +347,13 @@ export default class PreferencesUserSettingsTab extends React.Component<EmptyObj
                         formWrap
                     >
                         <SettingsFlag name="urlPreviewsEnabled" level={SettingLevel.DEVICE} />
-                        <SettingsFlag
-                            name="urlPreviewsEnabled_e2ee"
-                            level={SettingLevel.DEVICE}
-                            requires={["urlPreviewsEnabled"]}
-                        />
+                        {!isCryptoDisabled() && (
+                            <SettingsFlag
+                                name="urlPreviewsEnabled_e2ee"
+                                level={SettingLevel.DEVICE}
+                                requires={["urlPreviewsEnabled"]}
+                            />
+                        )}
                     </SettingsSubsection>
 
                     <SettingsSubsection heading={_t("settings|preferences|media_heading")} formWrap>

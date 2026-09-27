@@ -64,10 +64,10 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
     private [LoginField.Password]: Field | null = null;
 
     public static defaultProps = {
-        onUsernameChanged: function () {},
-        onUsernameBlur: function () {},
-        onPhoneCountryChanged: function () {},
-        onPhoneNumberChanged: function () {},
+        onUsernameChanged: function (): void {},
+        onUsernameBlur: function (): void {},
+        onPhoneCountryChanged: function (): void {},
+        onPhoneNumberChanged: function (): void {},
         loginIncorrect: false,
         disableSubmit: false,
     };
@@ -174,7 +174,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
         // Focus the first invalid field and show feedback in the stricter mode
         // that no longer allows empty values for required fields.
         invalidField.focus();
-        invalidField.validate({ allowEmpty: false, focused: true });
+        void invalidField.validate({ allowEmpty: false, focused: true });
         return false;
     }
 
@@ -401,9 +401,11 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
                         <option key={LoginField.Email} value={LoginField.Email}>
                             {_t("common|email_address")}
                         </option>
-                        <option key={LoginField.Password} value={LoginField.Password}>
-                            {_t("auth|msisdn_field_label")}
-                        </option>
+                        {!SdkConfig.get().disable_phone_login && (
+                            <option key={LoginField.Password} value={LoginField.Password}>
+                                {_t("auth|msisdn_field_label")}
+                            </option>
+                        )}
                     </Field>
                 </div>
             );

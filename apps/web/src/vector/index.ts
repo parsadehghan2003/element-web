@@ -12,6 +12,7 @@ Please see LICENSE files in the repository root for full details.
 
 import { logger } from "matrix-js-sdk/src/logger";
 import { shouldPolyfill as shouldPolyFillIntlSegmenter } from "@formatjs/intl-segmenter/should-polyfill.js";
+import "../../res/css/start9/mobile.pcss";
 
 // These are things that can run before the skin loads - be careful not to reference the react-sdk though.
 import { parseAppUrl } from "./url_utils";
@@ -22,10 +23,10 @@ import "../../res/css/_index.pcss";
 // Require common CSS here; this will make webpack process it into bundle.css.
 // Our own CSS (which is themed) is imported via separate webpack entry points
 // in webpack.config.js
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// eslint-disable-next-line @typescript-eslint/no-require-imports,import/no-commonjs,unicorn/prefer-module
 require("katex/dist/katex.css");
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// eslint-disable-next-line @typescript-eslint/no-require-imports,import/no-commonjs,unicorn/prefer-module
 require("./localstorage-fix");
 
 // Patch a fake window.TouchEvent for re-resizable's unguarded `instanceof TouchEvent`.
@@ -140,23 +141,6 @@ async function start(): Promise<void> {
 
         const parsedUrl = parseAppUrl(window.location);
 
-        // don't try to redirect to the native apps if we're
-        // verifying a 3pid (but after we've loaded the config)
-        // or if the user is following a deep link
-        // (https://github.com/element-hq/element-web/issues/7378)
-        const preventRedirect = !!parsedUrl.params.threepid || parsedUrl.location.length > 0;
-
-        if (!preventRedirect) {
-            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            const isAndroid = /Android/.test(navigator.userAgent);
-            if (isIos || isAndroid) {
-                if (sessionStorage.getItem("skip_mobile_redirect") !== "true") {
-                    window.location.href = "mobile_guide/";
-                    return;
-                }
-            }
-        }
-
         // set the platform for react sdk
         preparePlatform();
         // load config requires the platform to be ready
@@ -239,8 +223,12 @@ async function start(): Promise<void> {
         logger.error(err);
         // Like the compatibility page, AWOOOOOGA at the user
         // This uses the default brand since the app config is unavailable.
+        const stale = err instanceof Error && err.name === "ChunkLoadError";
         await showError(_t("error|misconfigured"), [
-            extractErrorMessageFromError(err, _t("error|app_launch_unexpected_error")),
+            extractErrorMessageFromError(
+                err,
+                stale ? _t("start9|stale_page|startup") : _t("error|app_launch_unexpected_error"),
+            ),
         ]);
     }
 }

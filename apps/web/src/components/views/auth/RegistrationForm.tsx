@@ -16,6 +16,8 @@ import { looksValid as phoneNumberLooksValid, type PhoneNumberCountryDefinition 
 import Modal from "../../../Modal";
 import { _t, _td } from "../../../languageHandler";
 import SdkConfig from "../../../SdkConfig";
+import SettingsStore from "../../../settings/SettingsStore";
+import { UIFeature } from "../../../settings/UIFeature";
 import { SAFE_LOCALPART_REGEX } from "../../../Registration";
 import withValidation, { type IFieldState, type IValidationResult } from "../elements/Validation";
 import EmailField from "./EmailField";
@@ -124,7 +126,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
         if (this.state.email === "") {
             if (this.showEmail()) {
                 const { finished } = Modal.createDialog(RegistrationEmailPromptDialog);
-                finished.then(async ([confirmed, email]) => {
+                await finished.then(async ([confirmed, email]) => {
                     if (confirmed && email !== undefined) {
                         this.setState({ email }, () => this.doSubmit(ev));
                     }
@@ -156,7 +158,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
 
         if (promise) {
             ev.target.disabled = true;
-            promise.finally(function () {
+            void promise.finally(function () {
                 ev.target.disabled = false;
             });
         }
@@ -209,7 +211,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
         // Focus the first invalid field and show feedback in the stricter mode
         // that no longer allows empty values for required fields.
         invalidField.focus();
-        invalidField.validate({ allowEmpty: false, focused: true });
+        await invalidField.validate({ allowEmpty: false, focused: true });
         return false;
     }
 
@@ -421,7 +423,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
     }
 
     private showPhoneNumber(): boolean {
-        const threePidLogin = !SdkConfig.get().disable_3pid_login;
+        const threePidLogin = !SdkConfig.get().disable_3pid_login && !SdkConfig.get().disable_phone_login;
         if (!threePidLogin || !this.authStepIsUsed("m.login.msisdn")) {
             return false;
         }
@@ -551,7 +553,9 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
 
         let emailHelperText: JSX.Element | undefined;
         if (this.showEmail()) {
-            if (this.showPhoneNumber()) {
+            if (!SettingsStore.getValue(UIFeature.IdentityServer)) {
+                emailHelperText = <div>{_t("auth|email_help_text")}</div>;
+            } else if (this.showPhoneNumber()) {
                 emailHelperText = (
                     <div>
                         {_t("auth|email_help_text")} {_t("auth|email_phone_discovery_text")}

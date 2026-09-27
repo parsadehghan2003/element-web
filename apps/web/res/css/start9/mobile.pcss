@@ -1,0 +1,267 @@
+/*
+Copyright 2026 Start9 Labs, Inc.
+
+SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only
+Please see LICENSE files in the repository root for full details.
+*/
+
+/* Phones show one pane at a time: the room list, the room, or the right panel.
+   Imported from the app entry rather than the theme index, so it stays outside the `app-web` cascade layer and
+   overrides upstream's layered rules whatever their specificity; `!important` is only for inline styles.
+   The breakpoint is shared with `usePhoneLayout`; move them together. */
+@media (max-width: 767px) {
+    /* LoggedInView's resizable pane group: no separator, and the visible pane takes the whole width. */
+    .mx_MatrixChat > div > .mx_Separator {
+        display: none;
+    }
+
+    .mx_MatrixChat > div > div:has(> .mx_LeftPanel_panel) {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+
+    /* A room is open: the space rail and the list step aside. A space home or the home page counts as no room. */
+    .mx_MatrixChat:has(.mx_RoomView) > div > .mx_SpacePanel,
+    .mx_MatrixChat:has(.mx_RoomView) > div > div:has(> .mx_LeftPanel_panel > .mx_LeftPanel_outerWrapper),
+    .mx_MatrixChat:not(:has(.mx_RoomView)) > div > div:has(> .mx_LeftPanel_panel > .mx_RoomView_wrapper) {
+        display: none !important;
+    }
+
+    /* The right panel covers the room instead of splitting it; its cards already carry back and close buttons. */
+    .mx_RightPanel_ResizeWrapper {
+        position: fixed !important;
+        inset: 0;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        width: auto !important;
+        max-width: none !important;
+        height: auto !important;
+        z-index: 100;
+    }
+
+    .mx_RightPanel_ResizeWrapper .mx_ResizeHandle--horizontal {
+        display: none;
+    }
+
+    /* Sign in, register and forgot-password: one column, the logo above the form, the card never wider than the
+       screen. Upstream lays the modal out for 700px and only adapts below 480px. */
+    .mx_AuthPage {
+        height: 100dvh;
+    }
+
+    .mx_AuthPage_modal {
+        width: calc(100% - 2 * var(--cpd-space-4x));
+        max-width: 532px;
+        margin: var(--cpd-space-6x) auto auto;
+    }
+
+    .mx_AuthPage_modalContent {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .mx_AuthHeader {
+        display: flex;
+        width: auto;
+        padding: var(--cpd-space-8x) var(--cpd-space-6x) var(--cpd-space-6x);
+        align-items: center;
+    }
+
+    .mx_AuthHeaderLogo {
+        display: block;
+        margin: 0;
+        padding: 0;
+    }
+
+    .mx_AuthHeaderLogo img {
+        width: auto;
+        max-width: 100%;
+        max-height: 72px;
+    }
+
+    .mx_AuthBody,
+    .mx_AuthBody.mx_AuthBody_forgot-password {
+        width: 100%;
+        max-width: 500px;
+        min-height: 0;
+        box-sizing: border-box;
+        padding: var(--cpd-space-6x) var(--cpd-space-5x);
+        border-radius: 0 0 var(--cpd-space-6x) var(--cpd-space-6x);
+    }
+
+    .mx_AuthBody_fieldRow {
+        flex-direction: column;
+        gap: var(--cpd-space-3x);
+    }
+
+    .mx_AuthBody_fieldRow > .mx_Field {
+        margin-inline: 0;
+    }
+
+    /* No keyboard, no shortcut hint in the search box. */
+    .mx_RoomListPanel kbd {
+        display: none;
+    }
+
+    /* A phone header has room for the name, threads and info; calls are dropped in RoomHeader.tsx. */
+    .mx_RoomHeader .mx_FacePile {
+        display: none;
+    }
+
+    /* Installed on a phone with a notch or home indicator, the app draws under both. */
+    .mx_MatrixChat_wrapper,
+    .mx_AuthPage {
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Dialogs fill the screen, without upstream's rounded, padded frame around them. */
+    .mx_Dialog_border {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        max-height: 100%;
+        padding-inline: 0;
+        border-radius: 0;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .mx_Dialog {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        padding: var(--cpd-space-4x);
+    }
+
+    .mx_Dialog_fixedWidth {
+        width: 100%;
+        max-width: none;
+    }
+
+    .mx_Dialog .mx_UserSettingsDialog,
+    .mx_Dialog .mx_RoomSettingsDialog,
+    .mx_Dialog .mx_SpaceSettingsDialog,
+    .mx_Dialog .mx_SpacePreferencesDialog {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+
+        .mx_TabbedView .mx_SettingsTab {
+            min-width: 0;
+            padding-right: var(--cpd-space-4x);
+        }
+    }
+}
+
+/* Settings dialogs on a phone: the tabs are a list, and picking one shows that tab's page with a back button
+   (`PhoneTabs.tsx` sets the classes, only on a phone). */
+@media (max-width: 767px) {
+    /* The tabbed view sits absolutely inside the dialog, so it takes the dialog's side padding itself. */
+    .mx_TabbedView_phoneList,
+    .mx_TabbedView_phonePage {
+        padding: 0 var(--cpd-space-4x);
+    }
+
+    .mx_TabbedView_phoneList {
+        .mx_TabbedView_tabLabels {
+            position: static;
+            width: 100%;
+            max-width: none;
+            display: flex;
+            flex-direction: column;
+            gap: var(--cpd-space-1x);
+            overflow-y: auto;
+        }
+
+        .mx_TabbedView_tabLabel {
+            justify-content: flex-start;
+            min-block-size: 52px;
+            padding-inline: var(--cpd-space-3x) var(--cpd-space-4x);
+            border-radius: var(--cpd-space-3x);
+            color: var(--cpd-color-text-primary);
+            font: var(--cpd-font-body-lg-medium);
+
+            svg {
+                width: 24px;
+                height: 24px;
+                margin-right: var(--cpd-space-4x);
+                color: var(--cpd-color-icon-secondary);
+            }
+
+            /* A chevron at the end of each row says it opens a page. */
+            &::after {
+                content: "";
+                margin-inline-start: auto;
+                width: 8px;
+                height: 8px;
+                border-top: 2px solid var(--cpd-color-icon-tertiary);
+                border-right: 2px solid var(--cpd-color-icon-tertiary);
+                transform: rotate(45deg);
+            }
+        }
+
+        .mx_TabbedView_tabLabel_text {
+            display: inline;
+            flex: 1;
+        }
+
+        /* In a list there is no current tab to highlight. */
+        .mx_TabbedView_tabLabel_active {
+            background-color: transparent;
+        }
+
+        .mx_TabbedView_tabLabel:active {
+            background-color: var(--cpd-color-bg-subtle-secondary);
+        }
+
+        .mx_TabbedView_tabPanel {
+            display: none;
+        }
+    }
+
+    .mx_TabbedView_phonePage {
+        .mx_TabbedView_tabLabels {
+            display: none;
+        }
+
+        .mx_TabbedView_tabPanel {
+            margin-left: 0;
+        }
+    }
+
+    /* Room and space settings tabs open with a heading that repeats the tab's name, already in the page header. */
+    .mx_RoomSettingsDialog,
+    .mx_SpaceSettingsDialog {
+        /* The first section sits directly in the tab, or inside the tab's one form. */
+        .mx_TabbedView_phonePage .mx_SettingsTab_sections > .mx_SettingsSection:first-child > h2:first-child,
+        .mx_TabbedView_phonePage
+            .mx_SettingsTab_sections
+            > :first-child
+            > .mx_SettingsSection:first-child
+            > h2:first-child {
+            display: none;
+        }
+    }
+
+    .mx_TabbedView_phoneHeader {
+        display: flex;
+        align-items: center;
+        gap: var(--cpd-space-2x);
+        margin-inline-start: calc(-1 * var(--cpd-space-2x));
+        padding-bottom: var(--cpd-space-3x);
+    }
+
+    .mx_TabbedView_phoneHeader_title {
+        margin: 0;
+        font: var(--cpd-font-heading-sm-semibold);
+        color: var(--cpd-color-text-primary);
+    }
+}

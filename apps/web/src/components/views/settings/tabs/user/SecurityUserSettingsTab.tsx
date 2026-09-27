@@ -160,7 +160,7 @@ export default class SecurityUserSettingsTab extends React.Component<EmptyObject
         if (index !== -1) {
             currentlyIgnoredUserIds.splice(index, 1);
             this.setState(({ waitingUnignored }) => ({ waitingUnignored: [...waitingUnignored, userId] }));
-            MatrixClientPeg.safeGet().setIgnoredUsers(currentlyIgnoredUserIds);
+            await MatrixClientPeg.safeGet().setIgnoredUsers(currentlyIgnoredUserIds);
         }
     };
 
@@ -215,11 +215,11 @@ export default class SecurityUserSettingsTab extends React.Component<EmptyObject
     };
 
     private onAcceptAllInvitesClicked = (): void => {
-        this.manageInvites(true);
+        void this.manageInvites(true);
     };
 
     private onRejectAllInvitesClicked = (): void => {
-        this.manageInvites(false);
+        void this.manageInvites(false);
     };
 
     private renderIgnoredUsers(): JSX.Element {
@@ -287,6 +287,7 @@ export default class SecurityUserSettingsTab extends React.Component<EmptyObject
     }
 
     public render(): React.ReactNode {
+        const cryptoEnabled = !!MatrixClientPeg.safeGet().getCrypto();
         const secureBackup = <SecureBackup />;
 
         const eventIndex = (
@@ -296,7 +297,7 @@ export default class SecurityUserSettingsTab extends React.Component<EmptyObject
         );
 
         let warning;
-        if (!privateShouldBeEncrypted(MatrixClientPeg.safeGet())) {
+        if (cryptoEnabled && !privateShouldBeEncrypted(MatrixClientPeg.safeGet())) {
             warning = (
                 <div className="mx_SecurityUserSettingsTab_warning">
                     <WarningIcon />
@@ -373,10 +374,12 @@ export default class SecurityUserSettingsTab extends React.Component<EmptyObject
             <SettingsTab>
                 {warning}
                 <SetIntegrationManager />
-                <SettingsSection heading={_t("settings|security|encryption_section")}>
-                    {secureBackup}
-                    {eventIndex}
-                </SettingsSection>
+                {cryptoEnabled && (
+                    <SettingsSection heading={_t("settings|security|encryption_section")}>
+                        {secureBackup}
+                        {eventIndex}
+                    </SettingsSection>
+                )}
                 {privacySection}
                 {advancedSection}
             </SettingsTab>
